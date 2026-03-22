@@ -30,7 +30,7 @@
 					}
 				)
 			);
-			return;
+			return false;
 		}
 
 		const res = await createNewTool(localStorage.token, {
@@ -49,7 +49,10 @@
 			tools.set(await getTools(localStorage.token));
 
 			await goto('/workspace/tools');
+			return true;
 		}
+
+		return false;
 	};
 
 	onMount(() => {

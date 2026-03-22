@@ -32,13 +32,19 @@
 	});
 
 	const onSubmit = async (modelInfo) => {
-		const res = await updateModelById(localStorage.token, modelInfo.id, modelInfo);
+		const res = await updateModelById(localStorage.token, modelInfo.id, modelInfo).catch((error) => {
+			toast.error(`${error}`);
+			return null;
+		});
 
 		if (res) {
 			await refreshModels(localStorage.token, { force: true, reason: 'workspace-models' });
 			toast.success($i18n.t('Assistant updated successfully'));
 			await goto('/workspace/models');
+			return true;
 		}
+
+		return false;
 	};
 </script>
 

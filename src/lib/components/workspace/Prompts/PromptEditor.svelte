@@ -4,6 +4,8 @@
 	import Textarea from '$lib/components/common/Textarea.svelte';
 	import { toast } from 'svelte-sonner';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
+	import InlineDirtyActions from '$lib/components/admin/Settings/InlineDirtyActions.svelte';
+	import { cloneSettingsSnapshot, isSettingsSnapshotEqual } from '$lib/utils/settings-dirty';
 	import AccessControl from '../common/AccessControl.svelte';
 	import LockClosed from '$lib/components/icons/LockClosed.svelte';
 	import AccessControlModal from '../common/AccessControlModal.svelte';
@@ -23,13 +25,53 @@
 	let tags: string[] = [];
 	let tagInput = '';
 
-	let accessControl = {};
+	const normalizeAccessControl = (value) =>
+		value === null
+			? null
+			: {
+					read: {
+						group_ids: value?.read?.group_ids ?? [],
+						user_ids: value?.read?.user_ids ?? []
+					},
+					write: {
+						group_ids: value?.write?.group_ids ?? [],
+						user_ids: value?.write?.user_ids ?? []
+					}
+				};
+
+	let accessControl = normalizeAccessControl({});
+	let loaded = false;
+	let initialSnapshot = null;
+	let snapshot = null;
+	let dirty = false;
 
 	let showAccessControlModal = false;
 
 	$: if (!edit) {
 		command = name !== '' ? `${name.replace(/\s+/g, '-').toLowerCase()}` : '';
 	}
+
+	const buildSnapshot = () => ({
+		name,
+		command,
+		content,
+		tags: cloneSettingsSnapshot(tags),
+		accessControl: cloneSettingsSnapshot(accessControl)
+	});
+
+	$: {
+		name;
+		command;
+		content;
+		tags;
+		accessControl;
+		snapshot = buildSnapshot();
+	}
+	$: dirty =
+		loaded &&
+		!!snapshot &&
+		!!initialSnapshot &&
+		!isSettingsSnapshotEqual(snapshot, initialSnapshot);
 
 	const submitHandler = async () => {
 		loading = true;
@@ -77,6 +119,17 @@
 		}
 	};
 
+	const handleReset = () => {
+		if (!initialSnapshot) return;
+		const next = cloneSettingsSnapshot(initialSnapshot);
+		name = next.name;
+		command = next.command;
+		content = next.content;
+		tags = next.tags;
+		accessControl = next.accessControl;
+		tagInput = '';
+	};
+
 	onMount(async () => {
 		if (prompt) {
 			name = prompt.name || prompt.title || '';
@@ -86,8 +139,12 @@
 			content = prompt.content;
 			tags = prompt.tags ?? [];
 
-			accessControl = prompt?.access_control ?? null;
+			accessControl = normalizeAccessControl(prompt?.access_control ?? null);
 		}
+
+		loaded = true;
+		await tick();
+		initialSnapshot = cloneSettingsSnapshot(buildSnapshot());
 	});
 </script>
 
@@ -106,53 +163,63 @@
 		}}
 	>
 		<div class="my-2">
-			<Tooltip
-				content={`${$i18n.t('Only alphanumeric characters and hyphens are allowed')} - ${$i18n.t(
-					'Activate this command by typing "/{{COMMAND}}" to chat input.',
-					{
-						COMMAND: command
-					}
-				)}`}
-				placement="bottom-start"
-			>
-				<div class="flex flex-col w-full">
-					<div class="flex items-center">
-						<input
-							class="text-2xl font-semibold w-full bg-transparent outline-hidden"
-							placeholder={$i18n.t('Title')}
-							bind:value={name}
-							required
-						/>
+			<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+				<Tooltip
+					content={`${$i18n.t('Only alphanumeric characters and hyphens are allowed')} - ${$i18n.t(
+						'Activate this command by typing "/{{COMMAND}}" to chat input.',
+						{
+							COMMAND: command
+						}
+					)}`}
+					placement="bottom-start"
+				>
+					<div class="flex flex-col w-full">
+						<div class="flex items-center">
+							<input
+								class="text-2xl font-semibold w-full bg-transparent outline-hidden"
+								placeholder={$i18n.t('Title')}
+								bind:value={name}
+								required
+							/>
 
-						<div class="self-center shrink-0">
-							<button
-								class="bg-gray-50 hover:bg-gray-100 text-black dark:bg-gray-850 dark:hover:bg-gray-800 dark:text-white transition px-2 py-1 rounded-full flex gap-1 items-center"
-								type="button"
-								on:click={() => {
-									showAccessControlModal = true;
-								}}
-							>
-								<LockClosed strokeWidth="2.5" className="size-3.5" />
+							<div class="self-center shrink-0">
+								<button
+									class="bg-gray-50 hover:bg-gray-100 text-black dark:bg-gray-850 dark:hover:bg-gray-800 dark:text-white transition px-2 py-1 rounded-full flex gap-1 items-center"
+									type="button"
+									on:click={() => {
+										showAccessControlModal = true;
+									}}
+								>
+									<LockClosed strokeWidth="2.5" className="size-3.5" />
 
-								<div class="text-sm font-medium shrink-0">
-									{$i18n.t('Access')}
-								</div>
-							</button>
+									<div class="text-sm font-medium shrink-0">
+										{$i18n.t('Access')}
+									</div>
+								</button>
+							</div>
+						</div>
+
+						<div class="flex gap-0.5 items-center text-xs text-gray-500">
+							<div class="">/</div>
+							<input
+								class=" w-full bg-transparent outline-hidden"
+								placeholder={$i18n.t('Command')}
+								bind:value={command}
+								required
+								disabled={edit}
+							/>
 						</div>
 					</div>
+				</Tooltip>
 
-					<div class="flex gap-0.5 items-center text-xs text-gray-500">
-						<div class="">/</div>
-						<input
-							class=" w-full bg-transparent outline-hidden"
-							placeholder={$i18n.t('Command')}
-							bind:value={command}
-							required
-							disabled={edit}
-						/>
-					</div>
-				</div>
-			</Tooltip>
+				<InlineDirtyActions
+					dirty={dirty}
+					saving={loading}
+					saveAsSubmit={true}
+					align="start"
+					on:reset={handleReset}
+				/>
+			</div>
 		</div>
 
 		<div class="my-2">

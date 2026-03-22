@@ -1,11 +1,13 @@
 <script>
 	import { goto } from '$app/navigation';
-	import { getContext } from 'svelte';
+	import { getContext, onMount, tick } from 'svelte';
 	const i18n = getContext('i18n');
 
 	import { createNewKnowledge, getKnowledgeBases } from '$lib/apis/knowledge';
 	import { toast } from 'svelte-sonner';
 	import { knowledge, user } from '$lib/stores';
+	import InlineDirtyActions from '$lib/components/admin/Settings/InlineDirtyActions.svelte';
+	import { cloneSettingsSnapshot, isSettingsSnapshotEqual } from '$lib/utils/settings-dirty';
 	import AccessControl from '../common/AccessControl.svelte';
 
 	let loading = false;
@@ -14,7 +16,43 @@
 
 	let name = '';
 	let description = '';
-	let accessControl = {};
+	const normalizeAccessControl = (value) =>
+		value === null
+			? null
+			: {
+					read: {
+						group_ids: value?.read?.group_ids ?? [],
+						user_ids: value?.read?.user_ids ?? []
+					},
+					write: {
+						group_ids: value?.write?.group_ids ?? [],
+						user_ids: value?.write?.user_ids ?? []
+					}
+				};
+
+	let accessControl = normalizeAccessControl({});
+	let loaded = false;
+	let initialSnapshot = null;
+	let snapshot = null;
+	let dirty = false;
+
+	const buildSnapshot = () => ({
+		name,
+		description,
+		accessControl: cloneSettingsSnapshot(accessControl)
+	});
+
+	$: {
+		name;
+		description;
+		accessControl;
+		snapshot = buildSnapshot();
+	}
+	$: dirty =
+		loaded &&
+		!!snapshot &&
+		!!initialSnapshot &&
+		!isSettingsSnapshotEqual(snapshot, initialSnapshot);
 
 	const submitHandler = async () => {
 		loading = true;
@@ -44,6 +82,20 @@
 
 		loading = false;
 	};
+
+	const handleReset = () => {
+		if (!initialSnapshot) return;
+		const next = cloneSettingsSnapshot(initialSnapshot);
+		name = next.name;
+		description = next.description;
+		accessControl = next.accessControl;
+	};
+
+	onMount(async () => {
+		await tick();
+		loaded = true;
+		initialSnapshot = cloneSettingsSnapshot(buildSnapshot());
+	});
 </script>
 
 <div class="workspace-section w-full max-h-full">
@@ -79,11 +131,23 @@
 		}}
 	>
 		<div class=" w-full flex flex-col justify-center">
+			<div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 			{#if showIntro}
 				<div class=" text-2xl font-medium font-primary mb-2.5">
 					{$i18n.t('Create a knowledge base')}
 				</div>
+			{:else}
+				<div></div>
 			{/if}
+
+				<InlineDirtyActions
+					dirty={dirty}
+					saving={loading}
+					saveAsSubmit={true}
+					align="start"
+					on:reset={handleReset}
+				/>
+			</div>
 
 			<div class="w-full flex flex-col gap-2.5">
 				<div class="w-full">

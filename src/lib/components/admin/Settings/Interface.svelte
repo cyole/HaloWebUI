@@ -61,17 +61,24 @@
 
 	let loading = true;
 	let saving = false;
-	let initialSnapshot = null;
+	let initialSnapshot: ReturnType<typeof buildSnapshot> | null = null;
 	let autoSyncBaseline = false;
 	let baselineSyncTimeout: ReturnType<typeof setTimeout> | null = null;
 	const BASELINE_SYNC_WINDOW_MS = 400;
 
 	const buildSnapshot = () => ({
-		taskConfig
+		taskConfig: cloneSettingsSnapshot(taskConfig)
 	});
 
-	$: snapshot = buildSnapshot();
+	let snapshot: ReturnType<typeof buildSnapshot> | null = null;
+	let tasksDirty = false;
+
+	$: {
+		taskConfig;
+		snapshot = buildSnapshot();
+	}
 	$: tasksDirty = !!(
+		snapshot &&
 		initialSnapshot &&
 		!isSettingsSnapshotEqual(snapshot, initialSnapshot)
 	);
@@ -92,6 +99,7 @@
 	};
 
 	$: if (
+		snapshot &&
 		autoSyncBaseline &&
 		(initialSnapshot === null || !isSettingsSnapshotEqual(snapshot, initialSnapshot))
 	) {

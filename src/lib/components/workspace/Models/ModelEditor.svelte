@@ -23,6 +23,7 @@
 	import InlineDirtyActions from '$lib/components/admin/Settings/InlineDirtyActions.svelte';
 	import { DEFAULT_MODEL_ICON, resolveModelIcon } from '$lib/utils/model-icons';
 	import { getModelBaseName, getModelChatDisplayName } from '$lib/utils/model-display';
+	import { cloneSettingsSnapshot, isSettingsSnapshotEqual } from '$lib/utils/settings-dirty';
 	import { getTools } from '$lib/apis/tools';
 	import { getFunctions } from '$lib/apis/functions';
 	import { getKnowledgeBases } from '$lib/apis/knowledge';
@@ -151,14 +152,54 @@
 	};
 
 	const resetProfileImageToMatchedIcon = () => {
-		const resolved = resolveModelIcon({
-			id,
-			name,
-			base_model_id: info?.base_model_id ?? null,
-			owned_by: (model as any)?.owned_by
-		} as any);
+		const resolved = getMatchedProfileImage(info?.base_model_id ?? null);
 
 		info.meta.profile_image_url = resolved ?? DEFAULT_MODEL_ICON;
+	};
+
+	const getMatchedProfileImage = (baseModelId: string | null) => {
+		const baseModel = baseModelId
+			? $models.find((candidate) => candidate.id === baseModelId)
+			: null;
+
+		const resolved = baseModel
+			? resolveModelIcon(baseModel as any)
+			: resolveModelIcon({
+					id,
+					name,
+					base_model_id: baseModelId,
+					owned_by: (model as any)?.owned_by
+				} as any);
+
+		return resolved ?? DEFAULT_MODEL_ICON;
+	};
+
+	const isUserCustomProfileImage = (icon?: string | null) =>
+		!!(
+			icon &&
+			icon !== DEFAULT_MODEL_ICON &&
+			(icon.startsWith('data:') ||
+				icon.startsWith('blob:') ||
+				icon.startsWith('/cache/') ||
+				icon.startsWith('/api/v1/files/'))
+		);
+
+	let trackedBaseModelId: string | null = null;
+
+	const syncProfileImageWithBaseModel = (nextBaseModelId: string | null) => {
+		const currentIcon = info?.meta?.profile_image_url ?? DEFAULT_MODEL_ICON;
+		const previousAutoIcon = getMatchedProfileImage(trackedBaseModelId);
+
+		if (isUserCustomProfileImage(currentIcon)) {
+			trackedBaseModelId = nextBaseModelId;
+			return;
+		}
+
+		if (currentIcon === DEFAULT_MODEL_ICON || currentIcon === previousAutoIcon) {
+			info.meta.profile_image_url = getMatchedProfileImage(nextBaseModelId);
+		}
+
+		trackedBaseModelId = nextBaseModelId;
 	};
 
 	let params = {
@@ -176,35 +217,69 @@
 	let filterIds = [];
 	let actionIds = [];
 
-	let accessControl = {};
+	const normalizeAccessControl = (value) =>
+		value === null
+			? null
+			: {
+					read: {
+						group_ids: value?.read?.group_ids ?? [],
+						user_ids: value?.read?.user_ids ?? []
+					},
+					write: {
+						group_ids: value?.write?.group_ids ?? [],
+						user_ids: value?.write?.user_ids ?? []
+					}
+				};
+
+	let accessControl = normalizeAccessControl({});
 	let builtinToolConfig: Record<string, boolean> = {};
 
 	// Dirty tracking
-	let initialSnapshot = '';
+	const buildSnapshot = () => ({
+		name,
+		id,
+		info: cloneSettingsSnapshot(info),
+		params: cloneSettingsSnapshot(params),
+		capabilities: cloneSettingsSnapshot(capabilities),
+		knowledge: cloneSettingsSnapshot(knowledge),
+		toolIds: cloneSettingsSnapshot(toolIds),
+		skillIds: cloneSettingsSnapshot(skillIds),
+		filterIds: cloneSettingsSnapshot(filterIds),
+		actionIds: cloneSettingsSnapshot(actionIds),
+		accessControl: cloneSettingsSnapshot(accessControl),
+		builtinToolConfig: cloneSettingsSnapshot(builtinToolConfig),
+		enableDescription
+	});
 
-	function computeSnapshot(): string {
-		return JSON.stringify({
-			name,
-			id,
-			info,
-			params,
-			capabilities,
-			knowledge,
-			toolIds,
-			skillIds,
-			filterIds,
-			actionIds,
-			accessControl,
-			builtinToolConfig,
-			enableDescription
-		});
+	let initialSnapshot: ReturnType<typeof buildSnapshot> | null = null;
+	let snapshot: ReturnType<typeof buildSnapshot> | null = null;
+	let dirty = false;
+
+	$: {
+		name;
+		id;
+		info;
+		params;
+		capabilities;
+		knowledge;
+		toolIds;
+		skillIds;
+		filterIds;
+		actionIds;
+		accessControl;
+		builtinToolConfig;
+		enableDescription;
+		snapshot = buildSnapshot();
 	}
-
-	$: dirty = loaded && computeSnapshot() !== initialSnapshot;
+	$: dirty =
+		loaded &&
+		!!snapshot &&
+		!!initialSnapshot &&
+		!isSettingsSnapshotEqual(snapshot, initialSnapshot);
 
 	function handleReset() {
 		if (!initialSnapshot) return;
-		const snap = JSON.parse(initialSnapshot);
+		const snap = cloneSettingsSnapshot(initialSnapshot);
 		name = snap.name;
 		id = snap.id;
 		info = snap.info;
@@ -263,12 +338,26 @@
 		info.id = id;
 		info.name = name;
 
-		if (id === '') {
+		if (id.trim() === '') {
 			toast.error('Model ID is required.');
+			loading = false;
+			saving = false;
+			return;
 		}
 
-		if (name === '') {
+		if (name.trim() === '') {
 			toast.error('Model Name is required.');
+			loading = false;
+			saving = false;
+			return;
+		}
+
+		if (preset && !info.base_model_id) {
+			toast.error($i18n.t('Please select a base model before saving this assistant.'));
+			selectedTab = 'profile';
+			loading = false;
+			saving = false;
+			return;
 		}
 
 		info.access_control = accessControl;
@@ -333,10 +422,16 @@
 			}
 		});
 
-		await onSubmit(info);
+		const saved = await onSubmit(info);
+		if (!saved) {
+			loading = false;
+			saving = false;
+			success = false;
+			return;
+		}
 
 		// Update snapshot after successful save
-		initialSnapshot = computeSnapshot();
+		initialSnapshot = cloneSettingsSnapshot(buildSnapshot());
 
 		loading = false;
 		saving = false;
@@ -412,10 +507,12 @@
 			builtinToolConfig = { ...(model?.meta?.builtin_tool_config ?? {}) };
 
 			if ('access_control' in model) {
-				accessControl = model.access_control;
+				accessControl = normalizeAccessControl(model.access_control);
 			} else {
-				accessControl = {};
+				accessControl = normalizeAccessControl({});
 			}
+
+			trackedBaseModelId = model.base_model_id ?? null;
 
 			info = {
 				...info,
@@ -434,7 +531,8 @@
 
 		loaded = true;
 		await tick();
-		initialSnapshot = computeSnapshot();
+		trackedBaseModelId = info?.base_model_id ?? null;
+		initialSnapshot = cloneSettingsSnapshot(buildSnapshot());
 	});
 </script>
 
@@ -543,7 +641,7 @@
 													<div class="text-base font-semibold text-gray-800 dark:text-gray-100">
 														{activeTab.title}
 													</div>
-													<InlineDirtyActions dirty={dirty || (!edit && name !== '')} {saving} saveAsSubmit={true} on:reset={handleReset} />
+													<InlineDirtyActions dirty={dirty} {saving} saveAsSubmit={true} on:reset={handleReset} />
 												</div>
 												<p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{activeTab.description}</p>
 											</div>
@@ -577,7 +675,7 @@
 					</section>
 
 					<!-- ==================== Content Section ==================== -->
-					<section class="glass-section p-5 space-y-3 transition-all duration-300 {(dirty || (!edit && name !== '')) ? 'glass-section-dirty' : ''}">
+					<section class="glass-section p-5 space-y-3 transition-all duration-300 {dirty ? 'glass-section-dirty' : ''}">
 
 						<!-- ===== Profile Tab ===== -->
 						{#if selectedTab === 'profile'}
@@ -684,6 +782,7 @@
 										className="w-full"
 										on:change={(e) => {
 											addUsage(e.detail.value);
+											syncProfileImageWithBaseModel(e.detail.value ?? null);
 										}}
 									/>
 								</div>

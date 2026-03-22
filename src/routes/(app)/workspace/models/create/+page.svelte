@@ -18,12 +18,12 @@
 			toast.error(
 				`Error: A model with the ID '${modelInfo.id}' already exists. Please select a different ID to proceed.`
 			);
-			return;
+			return false;
 		}
 
 		if (modelInfo.id === '') {
 			toast.error('Error: Model ID cannot be empty. Please enter a valid ID to proceed.');
-			return;
+			return false;
 		}
 
 		if (modelInfo) {
@@ -46,8 +46,11 @@
 				await refreshModels(localStorage.token, { force: true, reason: 'workspace-models' });
 				toast.success($i18n.t('Assistant created successfully!'));
 				await goto('/workspace/models');
+				return true;
 			}
 		}
+
+		return false;
 	};
 
 	let model = null;

@@ -36,6 +36,7 @@
 	import { capitalizeFirstLetter } from '$lib/utils';
 	import { getModelChatDisplayName } from '$lib/utils/model-display';
 	import HaloSelect from '$lib/components/common/HaloSelect.svelte';
+	import { cloneSettingsSnapshot } from '$lib/utils/settings-dirty';
 
 	let shiftKey = false;
 
@@ -52,6 +53,36 @@
 
 	let group_ids = [];
 	let visibilityFilter = 'all'; // 'all' | 'public' | 'private'
+
+	const canWriteModel = (model) => {
+		if ($user?.role === 'admin') return true;
+		if (model?.user_id === $user?.id) return true;
+
+		const writeAccess = model?.access_control?.write ?? {};
+		return (
+			(writeAccess?.user_ids ?? []).includes($user?.id) ||
+			(writeAccess?.group_ids ?? []).some((groupId) => group_ids.includes(groupId))
+		);
+	};
+
+	const getModelFormPayload = (model) => {
+		const info = cloneSettingsSnapshot(model?.info ?? model ?? {});
+		delete info.user;
+
+		return {
+			id: model.id,
+			base_model_id: info?.base_model_id ?? model?.base_model_id ?? null,
+			name: model.name,
+			params: info?.params ?? model?.params ?? {},
+			meta: {
+				...(model?.meta ?? {}),
+				...(info?.meta ?? {})
+			},
+			access_control:
+				info?.access_control !== undefined ? info.access_control : (model?.access_control ?? null),
+			is_active: info?.is_active ?? model?.is_active ?? true
+		};
+	};
 
 	$: if (models) {
 		filteredModels = models.filter((m) => {
@@ -90,8 +121,9 @@
 	};
 
 	const cloneModelHandler = async (model) => {
+		const modelInfo = model?.info ?? model;
 		sessionStorage.model = JSON.stringify({
-			...model,
+			...modelInfo,
 			id: `${model.id}-clone`,
 			name: `${model.name} (Clone)`
 		});
@@ -117,18 +149,7 @@
 	};
 
 	const hideModelHandler = async (model) => {
-		let info = model.info;
-
-		if (!info) {
-			info = {
-				id: model.id,
-				name: model.name,
-				meta: {
-					suggestion_prompts: null
-				},
-				params: {}
-			};
-		}
+		const info = getModelFormPayload(model);
 
 		info.meta = {
 			...info.meta,
@@ -261,10 +282,8 @@
 										let count = 0;
 										for (const model of filteredModels) {
 											if (model.info?.meta?.hidden) {
-												const info = {
-													...model.info,
-													meta: { ...model.info.meta, hidden: false }
-												};
+												const info = getModelFormPayload(model);
+												info.meta = { ...info.meta, hidden: false };
 												await updateModelById(localStorage.token, info.id, info);
 												count++;
 											}
@@ -310,12 +329,7 @@
 									on:click={async () => {
 										let count = 0;
 										for (const model of filteredModels) {
-											const info = model.info || {
-												id: model.id,
-												name: model.name,
-												meta: { suggestion_prompts: null },
-												params: {}
-											};
+											const info = getModelFormPayload(model);
 											if (!info?.meta?.hidden) {
 												info.meta = { ...info.meta, hidden: true };
 												await updateModelById(localStorage.token, info.id, info);
@@ -402,30 +416,35 @@
 								<div class=" font-semibold line-clamp-1">{getModelChatDisplayName(model)}</div>
 							</Tooltip>
 
-							<div class="flex gap-1 text-xs overflow-hidden">
-								<div class="line-clamp-1">
-									{#if (model?.meta?.description ?? '').trim()}
-										{model?.meta?.description}
-									{:else}
-										{model?.originalId ?? model?.original_id ?? model.id}
-									{/if}
+								<div class="flex gap-1 text-xs overflow-hidden">
+									<div class="line-clamp-1">
+										{#if (model?.meta?.description ?? '').trim()}
+											{model?.meta?.description}
+										{:else}
+											{model?.originalId ?? model?.original_id ?? model.id}
+										{/if}
+									</div>
 								</div>
+
 							</div>
-						</div>
-					</a>
-				</div>
+						</a>
+					</div>
 
 				<div class="flex justify-between items-center -mb-0.5 px-0.5">
 					<div class=" text-xs mt-0.5">
 						<Tooltip
-							content={model?.user?.email ?? $i18n.t('Deleted User')}
+							content={model?.user?.email ?? (model?.user_id === $user?.id ? $user?.email : $i18n.t('Deleted User'))}
 							className="flex shrink-0"
 							placement="top-start"
 						>
 							<div class="shrink-0 text-gray-500">
 								{$i18n.t('By {{name}}', {
 									name: capitalizeFirstLetter(
-										model?.user?.name ?? model?.user?.email ?? $i18n.t('Deleted User')
+										model?.user?.name ??
+											model?.user?.email ??
+											(model?.user_id === $user?.id
+												? ($user?.name ?? $user?.email)
+												: $i18n.t('Deleted User'))
 									)
 								})}
 							</div>
@@ -445,10 +464,10 @@
 									<GarbageBin />
 								</button>
 							</Tooltip>
-						{:else}
-							{#if $user?.role === 'admin' || model.user_id === $user?.id || model.access_control.write.group_ids.some( (wg) => group_ids.includes(wg) )}
-								<a
-									class="self-center w-fit text-sm px-2 py-2 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
+							{:else}
+								{#if canWriteModel(model)}
+									<a
+										class="self-center w-fit text-sm px-2 py-2 dark:text-gray-300 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 rounded-xl"
 									type="button"
 									href={`/workspace/models/edit?id=${encodeURIComponent(model.id)}`}
 								>

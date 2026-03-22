@@ -38,7 +38,7 @@
 					}
 				)
 			);
-			return;
+			return false;
 		}
 
 		const res = await updateFunctionById(localStorage.token, func.id, {
@@ -55,7 +55,10 @@
 			toast.success($i18n.t('Function updated successfully'));
 			functions.set(await getFunctions(localStorage.token));
 			await refreshModels(localStorage.token, { force: true, reason: 'settings-functions' });
+			return true;
 		}
+
+		return false;
 	};
 
 	const onEditorSave = (value: FunctionDraft) => {

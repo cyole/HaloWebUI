@@ -9,6 +9,8 @@
 	import Badge from '$lib/components/common/Badge.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import ChevronLeft from '$lib/components/icons/ChevronLeft.svelte';
+	import InlineDirtyActions from '$lib/components/admin/Settings/InlineDirtyActions.svelte';
+	import { cloneSettingsSnapshot, isSettingsSnapshotEqual } from '$lib/utils/settings-dirty';
 
 	let formElement = null;
 	let loading = false;
@@ -28,6 +30,10 @@
 	};
 	export let content = '';
 	let _content = '';
+	let loaded = false;
+	let initialSnapshot = null;
+	let snapshot = null;
+	let dirty = false;
 
 	$: if (content) {
 		updateContent();
@@ -40,6 +46,26 @@
 	$: if (name && !edit && !clone) {
 		id = name.replace(/\s+/g, '_').toLowerCase();
 	}
+
+	const buildSnapshot = () => ({
+		id,
+		name,
+		meta: cloneSettingsSnapshot(meta),
+		content: _content
+	});
+
+	$: {
+		id;
+		name;
+		meta;
+		_content;
+		snapshot = buildSnapshot();
+	}
+	$: dirty =
+		loaded &&
+		!!snapshot &&
+		!!initialSnapshot &&
+		!isSettingsSnapshotEqual(snapshot, initialSnapshot);
 
 	let codeEditor;
 	let boilerplate = `"""
@@ -259,12 +285,22 @@ class Pipe:
 
 	const saveHandler = async () => {
 		loading = true;
-		onSave({
-			id,
-			name,
-			meta,
-			content
-		});
+		try {
+			const saved = await onSave({
+				id,
+				name,
+				meta,
+				content
+			});
+
+			if (saved) {
+				initialSnapshot = cloneSettingsSnapshot(buildSnapshot());
+			}
+
+			return saved;
+		} finally {
+			loading = false;
+		}
 	};
 
 	const submitHandler = async () => {
@@ -281,10 +317,29 @@ class Pipe:
 			if (res) {
 				console.log('Code formatted successfully');
 
-				saveHandler();
+				await saveHandler();
 			}
 		}
 	};
+
+	const handleReset = () => {
+		if (!initialSnapshot) return;
+		const next = cloneSettingsSnapshot(initialSnapshot);
+		id = next.id;
+		name = next.name;
+		meta = next.meta;
+		content = next.content;
+		_content = next.content;
+	};
+
+	onMount(async () => {
+		const initialContent = content === '' ? boilerplate : content;
+		content = initialContent;
+		_content = initialContent;
+		loaded = true;
+		await tick();
+		initialSnapshot = cloneSettingsSnapshot(buildSnapshot());
+	});
 </script>
 
 <div class="workspace-section flex flex-col justify-between w-full overflow-y-auto h-full">
@@ -302,7 +357,8 @@ class Pipe:
 		>
 			<div class="flex flex-col flex-1 overflow-auto h-0 rounded-lg">
 				<div class="w-full mb-2 flex flex-col gap-0.5">
-					<div class="flex w-full items-center">
+					<div class="flex w-full flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+						<div class="flex w-full items-center">
 						{#if showBackButton}
 							<div class=" shrink-0 mr-2">
 								<Tooltip content={$i18n.t('Back')}>
@@ -334,6 +390,15 @@ class Pipe:
 						<div>
 							<Badge type="muted" content={$i18n.t('Function')} />
 						</div>
+						</div>
+
+						<InlineDirtyActions
+							dirty={dirty}
+							saving={loading}
+							saveAsSubmit={true}
+							align="start"
+							on:reset={handleReset}
+						/>
 					</div>
 
 					<div class=" flex gap-2 px-1 items-center">

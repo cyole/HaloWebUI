@@ -37,7 +37,7 @@
 					}
 				)
 			);
-			return;
+			return false;
 		}
 
 		const res = await createNewFunction(localStorage.token, {
@@ -56,7 +56,10 @@
 			await refreshModels(localStorage.token, { force: true, reason: 'settings-functions' });
 
 			await goto('/workspace/functions');
+			return true;
 		}
+
+		return false;
 	};
 
 	const onEditorSave = (value: FunctionDraft) => {

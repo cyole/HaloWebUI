@@ -77,7 +77,7 @@
 
 	let _value = '';
 
-	$: if (value) {
+	$: if (value !== undefined && value !== null) {
 		updateValue();
 	}
 
