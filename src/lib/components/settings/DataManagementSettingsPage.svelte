@@ -58,9 +58,6 @@
 	>;
 	$: activeTabMeta = tabMeta[selectedTab];
 
-	const shouldSpanDataManagementTabFullRowOnMobile = (index: number) =>
-		visibleTabs.length % 2 === 1 && index === visibleTabs.length - 1;
-
 	let importFiles: FileList | null = null;
 	let showArchiveConfirm = false;
 	let showDeleteConfirm = false;
@@ -216,9 +213,9 @@
 	<div class="max-w-6xl mx-auto space-y-6">
 		<!-- ==================== Hero Section ==================== -->
 		<section class="glass-section p-5 space-y-5">
-			<div class="flex flex-col gap-5">
-				<div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-					<div class="min-w-0">
+			<div class="@container flex flex-col gap-5">
+				<div class="flex flex-col gap-4 @[64rem]:flex-row @[64rem]:items-start @[64rem]:justify-between">
+					<div class="min-w-0 @[64rem]:flex-1">
 						<div class="inline-flex h-8 items-center gap-2 whitespace-nowrap rounded-full border border-gray-200/80 bg-white/80 px-3.5 text-xs font-medium leading-none text-gray-600 dark:border-gray-700/80 dark:bg-gray-900/70 dark:text-gray-300">
 							<span class="leading-none text-gray-400 dark:text-gray-500">{$i18n.t('Settings')}</span>
 							<span class="leading-none text-gray-300 dark:text-gray-600">/</span>
@@ -253,9 +250,9 @@
 						</div>
 					</div>
 
-					<div class="grid w-full grid-cols-2 rounded-2xl bg-gray-100 p-1 dark:bg-gray-850 md:inline-flex md:w-fit md:flex-col lg:mt-11 lg:flex-row">
-						{#each visibleTabs as tab, index}
-							<button type="button" class={`flex min-w-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all ${shouldSpanDataManagementTabFullRowOnMobile(index) ? 'col-span-2 md:col-span-1' : ''} ${selectedTab === tab ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'}`} on:click={() => { selectedTab = tab; }}>
+					<div class="inline-flex max-w-full flex-wrap items-center gap-2 self-start rounded-2xl bg-gray-100 p-1 dark:bg-gray-850 @[64rem]:ml-auto @[64rem]:mt-11 @[64rem]:flex-nowrap @[64rem]:justify-end @[64rem]:shrink-0">
+						{#each visibleTabs as tab}
+							<button type="button" class={`flex min-w-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all ${selectedTab === tab ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'}`} on:click={() => { selectedTab = tab; }}>
 								{#if tab === 'chatManagement'}
 									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2z" />

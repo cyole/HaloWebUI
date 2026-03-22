@@ -4,7 +4,7 @@
 
 	import { flyAndScale } from '$lib/utils/transitions';
 	import { createEventDispatcher, getContext, tick } from 'svelte';
-	import { Pin, SlidersHorizontal, Star } from 'lucide-svelte';
+	import { Pin, Share2, SlidersHorizontal, Star } from 'lucide-svelte';
 
 	import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
 	import Search from '$lib/components/icons/Search.svelte';
@@ -626,6 +626,9 @@
 				{/if}
 
 				{#each visibleItems as item, index}
+					{@const isSharedModel = Boolean(
+						item.model?.info?.user_id && item.model.info.user_id !== $user?.id
+					)}
 					{#if !searchValue && index > 0 && pinnedModelSet.has(visibleItems[index - 1]?.value) && !pinnedModelSet.has(item.value)}
 						<div class="border-b border-gray-100 dark:border-gray-800 my-1"></div>
 					{/if}
@@ -635,7 +638,7 @@
 						selectedModelIdx
 							? 'bg-gray-100 dark:bg-gray-800'
 							: ''}"
-					style="content-visibility:auto;contain-intrinsic-size:auto 40px"
+					style="content-visibility:auto;contain-intrinsic-size:auto 52px"
 						data-arrow-selected={index === selectedModelIdx}
 						data-value={item.value}
 						on:pointerenter={() => {
@@ -649,101 +652,94 @@
 						}}
 					>
 						<div class="flex flex-col flex-1 min-w-0">
-							<div class="flex items-center gap-2">
-								<div class="flex items-center min-w-fit">
-									<div class="line-clamp-1">
-										<div class="flex items-center min-w-fit"
-											title={$user?.role === 'admin' ? (item?.value ?? '') : ''}
-										>
-											<ModelIcon
-												src={item.model?.info?.meta?.profile_image_url ??
-													item.model?.meta?.profile_image_url ??
-													'/static/favicon.png'}
-												alt="Model"
-												className="rounded-lg size-5 mr-2 shrink-0"
-											loading={index < 8 ? "eager" : "lazy"}
-											/>
+							<div
+								class="flex min-w-0 items-start gap-2"
+								title={$user?.role === 'admin' ? (item?.value ?? '') : item.label}
+							>
+								<ModelIcon
+									src={item.model?.info?.meta?.profile_image_url ??
+										item.model?.meta?.profile_image_url ??
+										'/static/favicon.png'}
+									alt="Model"
+									className="rounded-lg size-5 mt-0.5 shrink-0"
+									loading={index < 8 ? 'eager' : 'lazy'}
+								/>
 
-											<div class="flex items-center line-clamp-1">
-												<div class="line-clamp-1">
-													{item.label}
-												</div>
-
-												{#if item.model.owned_by === 'ollama' && (item.model.ollama?.details?.parameter_size ?? '') !== ''}
-													<div class="flex ml-1 items-center translate-y-[0.5px]">
-														<span
-															class=" text-xs font-medium text-gray-600 dark:text-gray-400 line-clamp-1"
-															title={`${
-																item.model.ollama?.details?.quantization_level
-																	? item.model.ollama?.details?.quantization_level + ' '
-																	: ''
-															}${
-																item.model.ollama?.size
-																	? `(${(item.model.ollama?.size / 1024 ** 3).toFixed(1)}GB)`
-																	: ''
-															}`}
-															>{item.model.ollama?.details?.parameter_size ?? ''}</span
-														>
-													</div>
-												{/if}
+								<div class="min-w-0 flex-1">
+									<div class="flex min-w-0 items-center gap-1.5">
+										<div class="min-w-0 flex flex-1 items-center gap-1">
+											<div class="min-w-0 truncate">
+												{item.label}
 											</div>
+
+											{#if item.model.owned_by === 'ollama' && (item.model.ollama?.details?.parameter_size ?? '') !== ''}
+												<div class="ml-1 shrink-0 items-center translate-y-[0.5px]">
+													<span
+														class="text-xs font-medium text-gray-600 dark:text-gray-400"
+														title={`${
+															item.model.ollama?.details?.quantization_level
+																? item.model.ollama?.details?.quantization_level + ' '
+																: ''
+														}${
+															item.model.ollama?.size
+																? `(${(item.model.ollama?.size / 1024 ** 3).toFixed(1)}GB)`
+																: ''
+														}`}
+													>
+														{item.model.ollama?.details?.parameter_size ?? ''}
+													</span>
+												</div>
+											{/if}
 										</div>
+
+										{#if item.model?.info?.meta?.description}
+											<Tooltip
+												content={getDescriptionHtml(item.model?.info?.meta?.description)}
+											>
+												<div class="shrink-0 translate-y-[1px]">
+													<svg
+														xmlns="http://www.w3.org/2000/svg"
+														fill="none"
+														viewBox="0 0 24 24"
+														stroke-width="1.5"
+														stroke="currentColor"
+														class="size-3.5 text-gray-400 dark:text-gray-500"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+														/>
+													</svg>
+												</div>
+											</Tooltip>
+										{/if}
 									</div>
-								</div>
 
-								<!-- {JSON.stringify(item.info)} -->
-
-								{#if item.model?.info?.user_id && item.model.info.user_id !== $user?.id}
-									<div class="translate-y-[1px]" title={$i18n.t('Shared')}>
-										<svg
-												xmlns="http://www.w3.org/2000/svg"
-												viewBox="0 0 16 16"
-												fill="currentColor"
-												class="size-3"
+									{#if isSharedModel}
+										<div class="mt-1 flex flex-wrap items-center gap-1.5">
+											<span
+												class="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-900/25 dark:text-sky-300 whitespace-nowrap"
+												title={$i18n.t('Shared model')}
 											>
-												<path
-													fill-rule="evenodd"
-													d="M12.5 4.5a2.5 2.5 0 10-4.9.7L5.6 6.2a2.5 2.5 0 100 3.6l2 1a2.5 2.5 0 10.9-1.8l-2-1a2.48 2.48 0 000-1.9l2-1a2.5 2.5 0 001.9 0l.2.4a2.5 2.5 0 001.9 0l.2-.4A2.5 2.5 0 0012.5 4.5z"
-													clip-rule="evenodd"
-												/>
-											</svg>
-										</div>
+												<Share2 class="size-3 shrink-0" strokeWidth={2.1} />
+												<span>{$i18n.t('Shared')}</span>
+											</span>
 
-									{#if $user?.role !== 'admin'}
-										<span
-											class="text-[0.6rem] font-medium px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400"
-										>
-											{$i18n.t('Read Only')}
-										</span>
+											{#if $user?.role !== 'admin'}
+												<span
+													class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:bg-gray-700/50 dark:text-gray-300 whitespace-nowrap"
+												>
+													{$i18n.t('Read Only')}
+												</span>
+											{/if}
+										</div>
 									{/if}
-								{/if}
-
-								{#if item.model?.info?.meta?.description}
-									<Tooltip
-										content={getDescriptionHtml(item.model?.info?.meta?.description)}
-									>
-										<div class="translate-y-[1px]">
-											<svg
-												xmlns="http://www.w3.org/2000/svg"
-												fill="none"
-												viewBox="0 0 24 24"
-												stroke-width="1.5"
-												stroke="currentColor"
-												class="size-3.5 text-gray-400 dark:text-gray-500"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-												/>
-											</svg>
-										</div>
-									</Tooltip>
-								{/if}
+								</div>
 							</div>
 						</div>
 
-						<div class="flex items-center gap-0.5 shrink-0 pl-4">
+						<div class="flex items-center gap-0.5 shrink-0 self-center pl-3">
 							{#if showSetDefaultAction}
 								<!-- svelte-ignore a11y-click-events-have-key-events -->
 								<div

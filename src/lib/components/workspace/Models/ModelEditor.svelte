@@ -609,9 +609,9 @@
 
 					<!-- ==================== Hero Section ==================== -->
 					<section class="glass-section p-5 space-y-5">
-						<div class="flex flex-col gap-5">
-							<div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-								<div class="min-w-0">
+						<div class="@container flex flex-col gap-5">
+							<div class="flex flex-col gap-4 @[64rem]:flex-row @[64rem]:items-start @[64rem]:justify-between">
+								<div class="min-w-0 @[64rem]:flex-1">
 									<!-- Breadcrumb -->
 									<div class="inline-flex h-8 items-center gap-2 whitespace-nowrap rounded-full border border-gray-200/80 bg-white/80 px-3.5 text-xs font-medium leading-none text-gray-600 dark:border-gray-700/80 dark:bg-gray-900/70 dark:text-gray-300">
 										{#if onBack}
@@ -650,7 +650,7 @@
 								</div>
 
 								<!-- Tab bar -->
-								<div class="inline-flex w-fit flex-col lg:flex-row rounded-2xl bg-gray-100 p-1 dark:bg-gray-850">
+								<div class="inline-flex max-w-full flex-wrap items-center gap-2 self-start rounded-2xl bg-gray-100 p-1 dark:bg-gray-850 @[64rem]:ml-auto @[64rem]:mt-11 @[64rem]:flex-nowrap @[64rem]:justify-end @[64rem]:shrink-0">
 									{#each allTabs as tab (tab.key)}
 										<button
 											type="button"

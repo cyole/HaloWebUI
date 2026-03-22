@@ -11,7 +11,14 @@
 
 	const dispatch = createEventDispatcher();
 
-	import { config, models, settings, TTSWorker, activeAudioId, user } from '$lib/stores';
+	import {
+		config,
+		models,
+		settings,
+		TTSWorker,
+		activeAudioId,
+		user
+	} from '$lib/stores';
 	import { synthesizeOpenAISpeech } from '$lib/apis/audio';
 	import { imageGenerations } from '$lib/apis/images';
 	// [REACTION_FEATURE] Commented out - reaction feature disabled for now

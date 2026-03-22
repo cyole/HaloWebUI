@@ -542,6 +542,9 @@ const FALLBACK_SURFACE = {
 };
 
 let shikiModulePromise: Promise<typeof import('shiki')> | null = null;
+const SHIKI_LANGUAGE_ALIASES: Record<string, string> = {
+	svg: 'xml'
+};
 
 const loadShikiModule = async () => {
 	if (!shikiModulePromise) {
@@ -563,9 +566,10 @@ export const resolveShikiLanguage = async (input: string | null | undefined) => 
 	const shiki = await loadShikiModule();
 	const normalized = String(input ?? '').trim().toLowerCase();
 	if (!normalized) return 'plaintext';
+	const canonical = SHIKI_LANGUAGE_ALIASES[normalized] ?? normalized;
 
 	const matched = shiki.bundledLanguagesInfo.find(
-		(item) => item.id === normalized || item.aliases?.includes(normalized)
+		(item) => item.id === canonical || item.aliases?.includes(canonical)
 	);
 
 	return matched?.id ?? 'plaintext';

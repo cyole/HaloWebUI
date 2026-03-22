@@ -4,19 +4,26 @@
 	const i18n = getContext('i18n');
 	const dispatch = createEventDispatcher();
 
-	import { chatId, settings, showArtifacts, showControls } from '$lib/stores';
+	import {
+		artifactPreviewTarget,
+		chatId,
+		settings,
+		showArtifacts,
+		showControls
+	} from '$lib/stores';
 	import XMark from '../icons/XMark.svelte';
 	import { copyToClipboard, createMessagesList } from '$lib/utils';
 	import ArrowsPointingOut from '../icons/ArrowsPointingOut.svelte';
 	import Tooltip from '../common/Tooltip.svelte';
 	import SvgPanZoom from '../common/SVGPanZoom.svelte';
 	import ArrowLeft from '../icons/ArrowLeft.svelte';
+	import { extractSvgMarkupBlocks, normalizeSvgMarkup } from './Messages/Markdown/svgMarkupTokens';
 
 	export let overlay = false;
 	export let history;
 	let messages = [];
 
-	let contents: Array<{ type: string; content: string }> = [];
+	let contents: Array<{ type: string; content: string; messageId: string }> = [];
 	let selectedContentIdx = 0;
 
 	let copied = false;
@@ -117,14 +124,23 @@
                         </body>
                         </html>
                     `;
-					contents = [...contents, { type: 'iframe', content: renderedContent }];
-				} else {
-					// Check for SVG content
-					for (const block of codeBlocks) {
-						if (block.lang === 'svg' || (block.lang === 'xml' && block.code.includes('<svg'))) {
-							contents = [...contents, { type: 'svg', content: block.code }];
-						}
+					contents = [...contents, { type: 'iframe', content: renderedContent, messageId: message.id }];
+				}
+
+				for (const block of codeBlocks) {
+					if (block.lang === 'svg' || (block.lang === 'xml' && block.code.includes('<svg'))) {
+						contents = [
+							...contents,
+							{ type: 'svg', content: normalizeSvgMarkup(block.code), messageId: message.id }
+						];
 					}
+				}
+
+				for (const markup of extractSvgMarkupBlocks(cleanedContent)) {
+					contents = [
+						...contents,
+						{ type: 'svg', content: normalizeSvgMarkup(markup), messageId: message.id }
+					];
 				}
 			}
 		});
@@ -139,7 +155,44 @@
 			});
 		}
 
-		selectedContentIdx = contents ? contents.length - 1 : 0;
+		const target = $artifactPreviewTarget;
+		if (target?.type === 'svg' && target.content) {
+			const normalizedContent = normalizeSvgMarkup(target.content);
+			const existingIdx = contents.findIndex(
+				(content) => content.type === 'svg' && content.content === normalizedContent
+			);
+
+			if (existingIdx >= 0) {
+				selectedContentIdx = existingIdx;
+				return;
+			}
+
+			contents = [
+				...contents,
+				{
+					type: 'svg',
+					content: normalizedContent,
+					messageId: target.messageId ?? '__svg-preview__'
+				}
+			];
+			selectedContentIdx = contents.length - 1;
+			return;
+		}
+
+		if (target?.messageId) {
+			for (let idx = contents.length - 1; idx >= 0; idx -= 1) {
+				const content = contents[idx];
+				if (
+					content.messageId === target.messageId &&
+					(!target.type || content.type === target.type)
+				) {
+					selectedContentIdx = idx;
+					return;
+				}
+			}
+		}
+
+		selectedContentIdx = contents.length > 0 ? contents.length - 1 : 0;
 	};
 
 	function navigateContent(direction: 'prev' | 'next') {
@@ -199,6 +252,13 @@
 	onDestroy(() => {
 		alive = false;
 	});
+
+	const closeArtifacts = () => {
+		artifactPreviewTarget.set(null);
+		dispatch('close');
+		showControls.set(false);
+		showArtifacts.set(false);
+	};
 </script>
 
 <div class=" w-full h-full relative flex flex-col bg-gray-50 dark:bg-gray-850">
@@ -210,6 +270,7 @@
 				<button
 					class="self-center pointer-events-auto p-1 rounded-full bg-white dark:bg-gray-850"
 					on:click={() => {
+						artifactPreviewTarget.set(null);
 						showArtifacts.set(false);
 					}}
 				>
@@ -298,11 +359,7 @@
 
 				<button
 					class="self-center pointer-events-auto p-1 rounded-full bg-white dark:bg-gray-850"
-					on:click={() => {
-						dispatch('close');
-						showControls.set(false);
-						showArtifacts.set(false);
-					}}
+					on:click={closeArtifacts}
 				>
 					<XMark className="size-3.5 text-gray-900 dark:text-white" />
 				</button>
@@ -339,7 +396,7 @@
 					</div>
 				{:else}
 					<div class="m-auto font-medium text-xs text-gray-900 dark:text-white">
-						{$i18n.t('No HTML, CSS, or JavaScript content found.')}
+						{$i18n.t('No previewable HTML or SVG content found.')}
 					</div>
 				{/if}
 			</div>

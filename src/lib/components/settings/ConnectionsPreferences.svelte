@@ -176,17 +176,17 @@
 		<div class="max-w-6xl mx-auto space-y-6">
 			<!-- ==================== Hero Section ==================== -->
 			<section class="glass-section p-5 space-y-5">
-				<div class="flex flex-col gap-5">
-					<div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-						<div class="min-w-0">
+				<div class="@container flex flex-col gap-5">
+					<div class="flex flex-col gap-4 @[64rem]:flex-row @[64rem]:items-start @[64rem]:justify-between">
+						<div class="min-w-0 @[64rem]:flex-1">
 							<!-- Breadcrumb -->
-							<div class="flex items-center gap-3">
+							<div class="flex flex-wrap items-center gap-3">
 								<div class="inline-flex h-8 items-center gap-2 whitespace-nowrap rounded-full border border-gray-200/80 bg-white/80 px-3.5 text-xs font-medium leading-none text-gray-600 dark:border-gray-700/80 dark:bg-gray-900/70 dark:text-gray-300">
 									<span class="leading-none text-gray-400 dark:text-gray-500">{$i18n.t('Settings')}</span>
 									<span class="leading-none text-gray-300 dark:text-gray-600">/</span>
 									<span class="leading-none text-gray-900 dark:text-white">{$i18n.t('Connections')}</span>
 								</div>
-								<span class="whitespace-nowrap text-xs text-gray-400 dark:text-gray-500">{$i18n.t('接口按账户独立保存，其他用户无法查看或使用你的密钥')}</span>
+								<span class="text-xs text-gray-400 dark:text-gray-500">{$i18n.t('接口按账户独立保存，其他用户无法查看或使用你的密钥')}</span>
 							</div>
 
 							<div class="mt-3 flex items-start gap-3">
@@ -209,7 +209,7 @@
 						</div>
 
 						<!-- Tab pill bar -->
-						<div class="grid w-full grid-cols-2 rounded-2xl bg-gray-100 p-1 dark:bg-gray-850 md:inline-flex md:w-fit md:flex-col lg:mt-11 lg:flex-row">
+						<div class="inline-flex max-w-full flex-wrap items-center gap-2 self-start rounded-2xl bg-gray-100 p-1 dark:bg-gray-850 @[64rem]:ml-auto @[64rem]:mt-11 @[64rem]:flex-nowrap @[64rem]:justify-end @[64rem]:shrink-0">
 							{#each tabOrder as tab}
 								<button type="button" class={`flex min-w-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all ${selectedTab === tab ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'}`} on:click={() => { selectedTab = tab; }}>
 									{#if tab === 'openai'}

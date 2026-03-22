@@ -22,10 +22,12 @@
 
 	import Source from './Source.svelte';
 	import { settings } from '$lib/stores';
+	import { isSvgMarkup, promoteSvgMarkupTokens } from './svgMarkupTokens';
 
 	const dispatch = createEventDispatcher();
 
 	export let id: string;
+	export let messageId: string = id;
 	export let tokens: Token[];
 	export let top = true;
 	export let attributes = {};
@@ -124,7 +126,8 @@
 		return items;
 	}
 
-	$: renderItems = groupConsecutiveToolCalls(tokens);
+	$: normalizedTokens = promoteSvgMarkupTokens(tokens);
+	$: renderItems = groupConsecutiveToolCalls(normalizedTokens);
 </script>
 
 <!-- {JSON.stringify(tokens)} -->
@@ -144,6 +147,7 @@
 			{#if token.raw.includes('```')}
 				<CodeBlock
 					id={`${id}-${tokenIdx}`}
+					{messageId}
 					collapsed={$settings?.collapseCodeBlocks ?? false}
 					{token}
 					lang={token?.lang ?? ''}
@@ -238,6 +242,7 @@
 				<blockquote dir="auto">
 					<svelte:self
 						id={`${id}-${tokenIdx}`}
+						{messageId}
 						tokens={token.tokens}
 						{onTaskClick}
 						{onSourceClick}
@@ -269,6 +274,7 @@
 
 							<svelte:self
 								id={`${id}-${tokenIdx}-${itemIdx}`}
+								{messageId}
 								tokens={item.tokens}
 								top={token.loose}
 								{onTaskClick}
@@ -301,6 +307,7 @@
 
 							<svelte:self
 								id={`${id}-${tokenIdx}-${itemIdx}`}
+								{messageId}
 								tokens={item.tokens}
 								top={token.loose}
 								{onTaskClick}
@@ -323,6 +330,7 @@
 				<div class=" mb-1.5" slot="content">
 					<svelte:self
 						id={`${id}-${tokenIdx}-d`}
+						{messageId}
 						tokens={marked.lexer(token.text)}
 						attributes={token?.attributes}
 						{onTaskClick}
@@ -331,8 +339,28 @@
 				</div>
 			</Collapsible>
 		{:else if token.type === 'html'}
+			{@const isSvgMarkupToken = isSvgMarkup(token.text)}
 			{@const html = DOMPurify.sanitize(token.text, { ADD_ATTR: ['style'] })}
-			{#if html && html.includes('<video')}
+			{#if isSvgMarkupToken}
+				<CodeBlock
+					id={`${id}-${tokenIdx}-html-svg`}
+					{messageId}
+					collapsed={$settings?.collapseCodeBlocks ?? false}
+					token={{
+						type: 'code',
+						lang: 'svg',
+						raw: `\`\`\`svg\n${token.text}\n\`\`\``,
+						text: token.text
+					}}
+					lang="svg"
+					code={token.text}
+					{attributes}
+					{save}
+					onCode={(value) => {
+						dispatch('code', value);
+					}}
+				/>
+			{:else if html && html.includes('<video')}
 				{@html html}
 			{:else if token.text.includes(`<iframe src="${WEBUI_BASE_URL}/api/v1/files/`)}
 				{@html `${token.text}`}

@@ -5,7 +5,15 @@
 	const dispatch = createEventDispatcher();
 
 	import Markdown from './Markdown.svelte';
-	import { chatId, mobile, settings, showArtifacts, showControls, showOverview } from '$lib/stores';
+	import {
+		artifactPreviewTarget,
+		chatId,
+		mobile,
+		settings,
+		showArtifacts,
+		showControls,
+		showOverview
+	} from '$lib/stores';
 	import FloatingButtons from '../ContentRenderer/FloatingButtons.svelte';
 	import { createMessagesList } from '$lib/utils';
 
@@ -194,13 +202,24 @@
 		}}
 		on:code={(e) => {
 			const { lang, code } = e.detail;
+			const normalizedLang = String(lang ?? '').toLowerCase();
+			const isSvgCode =
+				normalizedLang === 'svg' || (normalizedLang === 'xml' && code.includes('<svg'));
+			const isHtmlArtifact = normalizedLang === 'html';
+			const shouldAutoOpenSvgPreview =
+				$settings?.svgPreviewAutoOpen ?? ($settings?.detectArtifacts ?? true);
 
 			if (
-				($settings?.detectArtifacts ?? true) &&
-				(['html', 'svg'].includes(lang) || (lang === 'xml' && code.includes('svg'))) &&
 				!$mobile &&
-				$chatId
+				$chatId &&
+				((($settings?.detectArtifacts ?? true) && isHtmlArtifact) ||
+					(shouldAutoOpenSvgPreview && isSvgCode))
 			) {
+				if (isSvgCode) {
+					artifactPreviewTarget.set({ messageId: id, type: 'svg', content: code });
+				} else {
+					artifactPreviewTarget.set(null);
+				}
 				showArtifacts.set(true);
 				showControls.set(true);
 			}

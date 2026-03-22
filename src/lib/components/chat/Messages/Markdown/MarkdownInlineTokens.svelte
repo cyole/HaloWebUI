@@ -15,6 +15,11 @@
 	import KatexRenderer from './KatexRenderer.svelte';
 	import Source from './Source.svelte';
 	import SourceToken from './SourceToken.svelte';
+	import {
+		isSvgMarkup,
+		mergeSvgMarkupTokens,
+		type RenderableHtmlToken
+	} from './svgMarkupTokens';
 
 	export let id: string;
 	export let tokens: Token[] = [];
@@ -34,74 +39,19 @@
 		}
 	}
 
-	type InlineRenderableToken = Token & {
-		raw?: string;
-		text?: string;
-	};
-
-	const SVG_OPEN_TAG_RE = /^<svg(?:\s|>)/i;
-	const SVG_CLOSE_TAG_RE = /<\/svg>/i;
-
-	function getTokenContent(token: InlineRenderableToken): string {
-		const value = token.text ?? token.raw ?? '';
-		return typeof value === 'string' ? value : '';
-	}
-
-	function isSvgFragmentToken(token: Token): boolean {
-		return token.type === 'html' || token.type === 'text' || token.type === 'escape';
-	}
-
-	// Marked may split inline SVG into <svg> + child tags + </svg> tokens inside a paragraph.
-	// Rendering those pieces one by one breaks the DOM tree and leaves an empty-sized svg shell.
-	function mergeInlineSvgTokens(tokens: Token[] = []): InlineRenderableToken[] {
-		const merged: InlineRenderableToken[] = [];
-
-		for (let i = 0; i < tokens.length; i += 1) {
-			const token = tokens[i] as InlineRenderableToken;
-			const content = getTokenContent(token);
-
-			if (token.type === 'html' && SVG_OPEN_TAG_RE.test(content)) {
-				const parts = [content];
-				let foundClose = SVG_CLOSE_TAG_RE.test(content);
-				let j = i + 1;
-
-				while (j < tokens.length && !foundClose && isSvgFragmentToken(tokens[j])) {
-					const next = tokens[j] as InlineRenderableToken;
-					const nextContent = getTokenContent(next);
-					parts.push(nextContent);
-					foundClose = SVG_CLOSE_TAG_RE.test(nextContent);
-					j += 1;
-				}
-
-				if (foundClose) {
-					const svgContent = parts.join('');
-					merged.push({
-						...token,
-						type: 'html',
-						raw: svgContent,
-						text: svgContent
-					});
-					i = j - 1;
-					continue;
-				}
-			}
-
-			merged.push(token);
-		}
-
-		return merged;
-	}
-
-	let renderTokens: InlineRenderableToken[] = [];
-	$: renderTokens = mergeInlineSvgTokens(tokens);
+	let renderTokens: RenderableHtmlToken[] = [];
+	$: renderTokens = mergeSvgMarkupTokens(tokens);
 </script>
 
 {#each renderTokens as token}
 	{#if token.type === 'escape'}
 		{unescapeHtml(token.text)}
 	{:else if token.type === 'html'}
+		{@const isSvgMarkupToken = isSvgMarkup(token.text)}
 		{@const html = DOMPurify.sanitize(token.text, { ADD_ATTR: ['style'] })}
-		{#if html && html.includes('<video')}
+		{#if isSvgMarkupToken}
+			<span class="font-mono whitespace-pre-wrap break-all">{token.text}</span>
+		{:else if html && html.includes('<video')}
 			{@html html}
 		{:else if token.text.includes(`<iframe src="${WEBUI_BASE_URL}/api/v1/files/`)}
 			{@html `${token.text}`}

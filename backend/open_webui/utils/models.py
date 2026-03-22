@@ -221,10 +221,9 @@ async def get_all_models(request, user: UserModel = None):
     base_models = await get_all_base_models(request, user=user)
     models = copy.deepcopy(base_models)
 
-    # If there are no models, return an empty list
-    if len(models) == 0:
-        request.state.MODELS = {}
-        return []
+    # Do not return early when the caller has no provider-backed base models.
+    # Admin-shared workspace models are injected below and must still be visible
+    # to users who have not configured their own connections.
 
     global_action_ids = [
         function.id for function in Functions.get_global_action_functions()

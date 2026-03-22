@@ -89,6 +89,9 @@ export const showControls = writable(false);
 export const showOverview = writable(false);
 export const showArtifacts = writable(false);
 export const showCallOverlay = writable(false);
+export const artifactPreviewTarget: Writable<
+	{ messageId?: string; type?: 'svg' | 'iframe'; content?: string } | null
+> = writable(null);
 
 export const temporaryChatEnabled = writable(false);
 export const scrollPaginationEnabled = writable(false);
@@ -166,6 +169,7 @@ type Settings = {
 	autoTags?: boolean;
 	autoFollowUps?: boolean;
 	detectArtifacts?: boolean;
+	svgPreviewAutoOpen?: boolean;
 	splitLargeDeltas?: boolean;
 	chatDirection?: 'LTR' | 'RTL' | 'auto';
 	landingPageMode?: string;

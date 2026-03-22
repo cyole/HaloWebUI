@@ -114,6 +114,7 @@
 	let autoTags = true;
 	let autoFollowUps = true;
 	let detectArtifacts = true;
+	let svgPreviewAutoOpen = true;
 	let responseAutoCopy = false;
 	let scrollOnBranchChange = true;
 	let enableMessageQueue = true;
@@ -212,6 +213,7 @@
 			autoTags: boolean;
 			autoFollowUps: boolean;
 			detectArtifacts: boolean;
+			svgPreviewAutoOpen: boolean;
 			responseAutoCopy: boolean;
 			scrollOnBranchChange: boolean;
 			enableMessageQueue: boolean;
@@ -524,6 +526,7 @@
 			autoTags,
 			autoFollowUps,
 			detectArtifacts,
+			svgPreviewAutoOpen,
 			responseAutoCopy,
 			scrollOnBranchChange,
 			enableMessageQueue,
@@ -596,6 +599,7 @@
 		autoTags = snapshot.autoTags;
 		autoFollowUps = snapshot.autoFollowUps;
 		detectArtifacts = snapshot.detectArtifacts;
+		svgPreviewAutoOpen = snapshot.svgPreviewAutoOpen;
 		responseAutoCopy = snapshot.responseAutoCopy;
 		scrollOnBranchChange = snapshot.scrollOnBranchChange;
 		enableMessageQueue = snapshot.enableMessageQueue;
@@ -655,6 +659,7 @@
 		autoTags;
 		autoFollowUps;
 		detectArtifacts;
+		svgPreviewAutoOpen;
 		responseAutoCopy;
 		scrollOnBranchChange;
 		enableMessageQueue;
@@ -945,6 +950,7 @@
 				autoTags,
 				autoFollowUps,
 				detectArtifacts,
+				svgPreviewAutoOpen,
 				responseAutoCopy,
 				scrollOnBranchChange,
 				enableMessageQueue,
@@ -1094,6 +1100,7 @@
 		autoFollowUps = $settings?.autoFollowUps ?? true;
 
 		detectArtifacts = $settings?.detectArtifacts ?? true;
+		svgPreviewAutoOpen = $settings?.svgPreviewAutoOpen ?? ($settings?.detectArtifacts ?? true);
 		responseAutoCopy = $settings?.responseAutoCopy ?? false;
 		showChatTitleInTab = $settings?.showChatTitleInTab ?? true;
 		enableMessageQueue = $settings?.enableMessageQueue ?? true;
@@ -1927,6 +1934,14 @@
 											</div>
 											<Switch
 												bind:state={detectArtifacts}
+											/>
+										</div>
+										<div class="flex items-center justify-between glass-item px-4 py-3">
+											<div class="text-sm font-medium">
+												{$i18n.t('Auto-Open SVG Preview')}
+											</div>
+											<Switch
+												bind:state={svgPreviewAutoOpen}
 											/>
 										</div>
 									</div>

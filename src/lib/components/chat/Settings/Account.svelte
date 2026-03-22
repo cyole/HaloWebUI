@@ -98,15 +98,15 @@
 </script>
 
 {#if loaded}
-	<form class="flex h-full min-h-0 flex-col text-sm">
-		<div class="h-full space-y-6 overflow-y-auto scrollbar-hidden">
-			<div class="max-w-6xl mx-auto space-y-6">
+	<form class="flex h-full min-h-0 min-w-0 flex-col text-sm">
+		<div class="h-full min-w-0 space-y-6 overflow-y-auto scrollbar-hidden">
+			<div class="mx-auto max-w-6xl min-w-0 space-y-6">
 				<!-- Hero Section (only for admin) -->
 				{#if isAdmin}
 					<section class="glass-section p-5 space-y-5">
-						<div class="flex flex-col gap-5">
-							<div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-								<div class="min-w-0">
+						<div class="@container flex flex-col gap-5">
+							<div class="flex flex-col gap-4 @[64rem]:flex-row @[64rem]:items-start @[64rem]:justify-between">
+								<div class="min-w-0 @[64rem]:flex-1">
 									<div class="inline-flex h-8 items-center gap-2 whitespace-nowrap rounded-full border border-gray-200/80 bg-white/80 px-3.5 text-xs font-medium leading-none text-gray-600 dark:border-gray-700/80 dark:bg-gray-900/70 dark:text-gray-300">
 										<span class="leading-none text-gray-400 dark:text-gray-500">{$i18n.t('Settings')}</span>
 										<span class="leading-none text-gray-300 dark:text-gray-600">/</span>
@@ -140,7 +140,7 @@
 								</div>
 
 								<!-- Tabs moved to right -->
-								<div class="grid w-full grid-cols-2 rounded-2xl bg-gray-100 p-1 dark:bg-gray-850 md:inline-flex md:w-fit md:flex-col lg:mt-11 lg:flex-row">
+								<div class="inline-flex max-w-full flex-wrap items-center gap-2 self-start rounded-2xl bg-gray-100 p-1 dark:bg-gray-850 @[64rem]:ml-auto @[64rem]:mt-11 @[64rem]:flex-nowrap @[64rem]:justify-end @[64rem]:shrink-0">
 									<button
 										type="button"
 										class={`flex min-w-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all ${

@@ -113,6 +113,15 @@
 		return dayjs(value * 1000).format('LL');
 	};
 
+	const formatCreatedAtCompact = (timestamp: number | null | undefined) => {
+		const value = Number(timestamp ?? 0);
+		if (!value) {
+			return '—';
+		}
+
+		return dayjs(value * 1000).format('YYYY-MM-DD');
+	};
+
 	const getRoleLabel = (role: string) => $i18n.t(role);
 
 	const getRoleClasses = (role: string) => {
@@ -194,7 +203,7 @@
 
 <UserChatsModal bind:show={showUserChatsModal} user={selectedUser} />
 
-<div class="space-y-6">
+<div class="min-w-0 space-y-6">
 	{#if seatExceeded}
 		<div class="text-xs text-red-500">
 			<Banner
@@ -308,8 +317,8 @@
 	</section>
 
 	<!-- Users Table Section -->
-	<section class="glass-section p-0 overflow-hidden hidden md:block">
-		<div class="overflow-x-auto">
+	<section class="glass-section hidden max-w-full overflow-hidden p-0 xl:block">
+		<div class="max-w-full overflow-x-auto">
 			<table class="min-w-full table-auto text-left text-sm">
 				<thead class="bg-gray-50/70 dark:bg-gray-800/40 text-xs tracking-wide border-b border-gray-200/40 dark:border-gray-700/30">
 					<tr>
@@ -495,6 +504,200 @@
 													<button
 														type="button"
 														class="rounded-lg p-2 text-gray-500 dark:text-gray-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-300"
+														on:click={() => {
+															selectedUser = user;
+															showDeleteConfirmDialog = true;
+														}}
+													>
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															fill="none"
+															viewBox="0 0 24 24"
+															stroke-width="1.5"
+															stroke="currentColor"
+															class="size-4"
+														>
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+															/>
+														</svg>
+													</button>
+												</Tooltip>
+											{/if}
+										</div>
+									</div>
+								</td>
+							</tr>
+						{/each}
+					{/if}
+				</tbody>
+			</table>
+		</div>
+		<div class="px-5 py-3 text-xs text-gray-400 dark:text-gray-500">
+			ⓘ {$i18n.t("Click the button on the left side of the avatar to change a user's permission group.")}
+		</div>
+	</section>
+
+	<!-- Compact Table -->
+	<section class="glass-section hidden overflow-hidden p-0 md:block xl:hidden">
+		<div class="max-w-full overflow-x-auto">
+			<table class="min-w-full table-fixed text-left text-sm">
+				<thead class="border-b border-gray-200/40 bg-gray-50/70 text-xs tracking-wide dark:border-gray-700/30 dark:bg-gray-800/40">
+					<tr>
+						<th class="w-[44%] px-5 py-4">
+							<button
+								type="button"
+								class="inline-flex items-center gap-1.5 font-semibold text-gray-500 transition hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+								on:click={() => setSortKey('name')}
+							>
+								<span>{$i18n.t('Name')}</span>
+								{#if sortKey === 'name'}
+									{#if sortOrder === 'asc'}
+										<ChevronUp className="size-3.5" />
+									{:else}
+										<ChevronDown className="size-3.5" />
+									{/if}
+								{/if}
+							</button>
+						</th>
+						<th class="w-[18%] px-5 py-4">
+							<button
+								type="button"
+								class="inline-flex items-center gap-1.5 font-semibold text-gray-500 transition hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+								on:click={() => setSortKey('role')}
+							>
+								<span>{$i18n.t('Role')}</span>
+								{#if sortKey === 'role'}
+									{#if sortOrder === 'asc'}
+										<ChevronUp className="size-3.5" />
+									{:else}
+										<ChevronDown className="size-3.5" />
+									{/if}
+								{/if}
+							</button>
+						</th>
+						<th class="w-[22%] px-5 py-4">
+							<button
+								type="button"
+								class="inline-flex items-center gap-1.5 font-semibold text-gray-500 transition hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+								on:click={() => setSortKey('last_active_at')}
+							>
+								<span>{$i18n.t('Last Active')}</span>
+								{#if sortKey === 'last_active_at'}
+									{#if sortOrder === 'asc'}
+										<ChevronUp className="size-3.5" />
+									{:else}
+										<ChevronDown className="size-3.5" />
+									{/if}
+								{/if}
+							</button>
+						</th>
+						<th class="w-[16%] px-5 py-4 text-right" />
+					</tr>
+				</thead>
+
+				<tbody class="divide-y divide-gray-200/40 dark:divide-gray-700/30">
+					{#if pagedUsers.length === 0}
+						<tr>
+							<td colspan="4" class="px-5 py-16 text-center">
+								<div class="mx-auto max-w-sm space-y-2">
+									<div class="text-sm font-medium text-gray-500 dark:text-gray-400">
+										{$i18n.t('No users were found.')}
+									</div>
+									<div class="text-xs text-gray-400 dark:text-gray-500">
+										{$i18n.t('Try a different name or email search.')}
+									</div>
+								</div>
+							</td>
+						</tr>
+					{:else}
+						{#each pagedUsers as user (user.id)}
+							<tr class="group transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+								<td class="px-5 py-4 align-middle">
+									<div class="flex min-w-0 items-center gap-3">
+										<LetterAvatar name={user.name} size="size-10" className="rounded-2xl" textClass="text-sm" />
+										<div class="min-w-0">
+											<div class="truncate font-semibold text-gray-900 dark:text-white">{user.name}</div>
+											<div class="mt-1 truncate text-xs text-gray-400 dark:text-gray-500">
+												{user.email}
+											</div>
+										</div>
+									</div>
+								</td>
+
+								<td class="px-5 py-4 align-middle">
+									<button
+										type="button"
+										class={`inline-flex whitespace-nowrap items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold leading-none transition hover:-translate-y-[1px] ${getRoleClasses(user.role)}`}
+										on:click={() => advanceRole(user)}
+									>
+										<span class="size-1.5 rounded-full bg-current opacity-80" />
+										<span class="leading-none">{getRoleLabel(user.role)}</span>
+									</button>
+								</td>
+
+								<td class="px-5 py-4 align-middle">
+									<div class="space-y-1">
+										<div class="whitespace-nowrap text-sm font-medium text-gray-700 dark:text-gray-200">
+											{formatLastActive(user.last_active_at)}
+										</div>
+										<div class="whitespace-nowrap text-xs text-gray-400 dark:text-gray-500">
+											{$i18n.t('Created at')} {formatCreatedAtCompact(user.created_at)}
+										</div>
+									</div>
+								</td>
+
+								<td class="px-5 py-4 align-middle">
+									<div class="flex justify-end">
+										<div class="inline-flex items-center gap-1 rounded-xl border border-gray-200/40 bg-white/90 p-1 dark:border-gray-700/30 dark:bg-gray-900/50">
+											{#if $config.features.enable_admin_chat_access && user.role !== 'admin'}
+												<Tooltip content={$i18n.t('Chats')}>
+													<button
+														type="button"
+														class="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+														on:click={() => {
+															selectedUser = user;
+															showUserChatsModal = true;
+														}}
+													>
+														<ChatBubbles />
+													</button>
+												</Tooltip>
+											{/if}
+
+											<Tooltip content={$i18n.t('Edit User')}>
+												<button
+													type="button"
+													class="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+													on:click={() => {
+														selectedUser = user;
+														showEditUserModal = true;
+													}}
+												>
+													<svg
+														xmlns="http://www.w3.org/2000/svg"
+														fill="none"
+														viewBox="0 0 24 24"
+														stroke-width="1.5"
+														stroke="currentColor"
+														class="size-4"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+														/>
+													</svg>
+												</button>
+											</Tooltip>
+
+											{#if user.role !== 'admin'}
+												<Tooltip content={$i18n.t('Delete User')}>
+													<button
+														type="button"
+														class="rounded-lg p-2 text-gray-500 transition hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-950/30 dark:hover:text-red-300"
 														on:click={() => {
 															selectedUser = user;
 															showDeleteConfirmDialog = true;

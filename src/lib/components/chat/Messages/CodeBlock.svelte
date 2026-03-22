@@ -6,7 +6,7 @@
 
 	import CodeEditor from '$lib/components/common/CodeEditor.svelte';
 	import SvgPanZoom from '$lib/components/common/SVGPanZoom.svelte';
-	import { config, settings } from '$lib/stores';
+	import { artifactPreviewTarget, config, settings, showArtifacts, showControls } from '$lib/stores';
 	import { executeCode } from '$lib/apis/utils';
 	import { toast } from 'svelte-sonner';
 	import ChevronUpDown from '$lib/components/icons/ChevronUpDown.svelte';
@@ -31,6 +31,7 @@
 	export let token;
 	export let lang = '';
 	export let code = '';
+	export let messageId = '';
 
 	$: langIcon = getLanguageIcon(lang);
 	export let attributes = {};
@@ -67,6 +68,24 @@
 
 	const collapseCodeBlock = () => {
 		collapsed = !collapsed;
+	};
+
+	const isSvgPreviewable = (lang: string, code: string) => {
+		const normalizedLang = String(lang ?? '').toLowerCase();
+		return normalizedLang === 'svg' || (normalizedLang === 'xml' && code.includes('<svg'));
+	};
+
+	const previewSvg = () => {
+		const previewContent = (_code || code || '').trim();
+		if (!previewContent) return;
+
+		artifactPreviewTarget.set({
+			messageId,
+			type: 'svg',
+			content: previewContent
+		});
+		showArtifacts.set(true);
+		showControls.set(true);
 	};
 
 	const saveCode = () => {
@@ -497,6 +516,23 @@
 								</svg>
 							</button>
 						{/if}
+					{/if}
+
+					{#if isSvgPreviewable(lang, code)}
+						<button
+							class="inline-flex items-center text-gray-400 dark:text-gray-500 hover:text-sky-600 dark:hover:text-sky-400 p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+							on:click={previewSvg}
+							title={`${$i18n.t('Preview')} SVG`}
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+								class="size-4"
+							>
+								<path d="M10 4c4.478 0 8.268 2.943 9.543 7-.33 1.05-.84 2.026-1.498 2.889C16.37 16.083 13.35 18 10 18s-6.37-1.917-8.045-5.111A9.963 9.963 0 0 1 .457 11C1.732 6.943 5.522 4 10 4Zm0 2c-3.182 0-5.92 2.07-7.05 5 1.13 2.93 3.868 5 7.05 5s5.92-2.07 7.05-5c-1.13-2.93-3.868-5-7.05-5Zm0 1.75a3.25 3.25 0 1 1 0 6.5 3.25 3.25 0 0 1 0-6.5Z" />
+							</svg>
+						</button>
 					{/if}
 
 					{#if save}
