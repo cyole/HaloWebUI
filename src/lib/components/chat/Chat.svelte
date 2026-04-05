@@ -405,7 +405,7 @@
 	setContext('floatingChatRequestFactory', buildFloatingChatRequest);
 
 	const getPreferredDefaultWebSearchMode = (): WebSearchMode =>
-		getPreferredWebSearchMode($settings, $config, 'off');
+		getPreferredWebSearchMode($settings, 'off');
 
 	const getImageGenerationOptionsPayload = () => {
 		const raw = imageGenerationOptions ?? {};

@@ -16,7 +16,6 @@
 	import { revealExpandedSection } from '$lib/utils/expanded-section-scroll';
 	import InlineDirtyActions from './InlineDirtyActions.svelte';
 	import { cloneSettingsSnapshot, isSettingsSnapshotEqual } from '$lib/utils/settings-dirty';
-	import { normalizeWebSearchMode, type WebSearchMode } from '$lib/utils/web-search-mode';
 
 	const i18n: Writable<any> = getContext('i18n');
 
@@ -65,7 +64,6 @@
 		'sougou'
 	];
 	let webLoaderEngines = ['playwright', 'firecrawl', 'tavily'];
-	let defaultWebSearchModes: Array<{ value: WebSearchMode; label: string; disabled?: boolean }> = [];
 
 	const YOUTUBE_LANGUAGES = [
 		{ value: 'en', label: 'English' },
@@ -219,39 +217,6 @@
 		return message;
 	};
 
-	const getDefaultWebSearchModeFallback = (): WebSearchMode => {
-		return 'off';
-	};
-
-	const getEnabledDefaultWebSearchModes = (): WebSearchMode[] => {
-		const modes: WebSearchMode[] = ['off'];
-
-		if (webConfig?.ENABLE_WEB_SEARCH) {
-			modes.push('halo');
-		}
-
-		if (webConfig?.ENABLE_NATIVE_WEB_SEARCH) {
-			modes.push('native');
-		}
-
-		if (webConfig?.ENABLE_WEB_SEARCH && webConfig?.ENABLE_NATIVE_WEB_SEARCH) {
-			modes.push('auto');
-		}
-
-		return modes;
-	};
-
-	const coerceDefaultWebSearchMode = () => {
-		if (!webConfig) return;
-
-		const fallback = getDefaultWebSearchModeFallback();
-		const normalized = normalizeWebSearchMode(webConfig.DEFAULT_WEB_SEARCH_MODE, fallback);
-
-		webConfig.DEFAULT_WEB_SEARCH_MODE = getEnabledDefaultWebSearchModes().includes(normalized)
-			? normalized
-			: fallback;
-	};
-
 	const buildSnapshot = () => {
 		if (!webConfig) return null;
 
@@ -259,7 +224,6 @@
 			webSearch: {
 				ENABLE_WEB_SEARCH: webConfig.ENABLE_WEB_SEARCH,
 				ENABLE_NATIVE_WEB_SEARCH: webConfig.ENABLE_NATIVE_WEB_SEARCH,
-				DEFAULT_WEB_SEARCH_MODE: webConfig.DEFAULT_WEB_SEARCH_MODE,
 				WEB_SEARCH_ENGINE: webConfig.WEB_SEARCH_ENGINE,
 				SEARXNG_QUERY_URL: webConfig.SEARXNG_QUERY_URL,
 				GOOGLE_PSE_API_KEY: webConfig.GOOGLE_PSE_API_KEY,
@@ -387,17 +351,12 @@
 				runtimeCapabilities = res?.capabilities ?? runtimeCapabilities;
 				webConfig.ENABLE_WEB_SEARCH = webConfig.ENABLE_WEB_SEARCH ?? false;
 				webConfig.ENABLE_NATIVE_WEB_SEARCH = webConfig.ENABLE_NATIVE_WEB_SEARCH ?? false;
-				webConfig.DEFAULT_WEB_SEARCH_MODE = normalizeWebSearchMode(
-					webConfig.DEFAULT_WEB_SEARCH_MODE,
-					'off'
-				);
 				normalizeNumericWebConfig(webConfig);
 				webConfig.WEB_SEARCH_DOMAIN_FILTER_LIST = listToCsv(webConfig.WEB_SEARCH_DOMAIN_FILTER_LIST);
 				webConfig.YOUTUBE_LOADER_LANGUAGE = listToCsv(webConfig.YOUTUBE_LOADER_LANGUAGE);
 				const langArray = csvToList(webConfig.YOUTUBE_LOADER_LANGUAGE);
 				youtubeLanguage = langArray.length > 0 ? langArray[0] : '';
 				youtubeTranslation = webConfig.YOUTUBE_LOADER_TRANSLATION || '';
-				coerceDefaultWebSearchMode();
 				initialSnapshot = cloneSettingsSnapshot(buildSnapshot());
 			} else {
 				webConfig = null;
@@ -422,8 +381,6 @@
 			toast.error(selectedLoaderCapabilityMessage || $i18n.t('Current web loader is unavailable.'));
 			return false;
 		}
-
-		coerceDefaultWebSearchMode();
 
 		// Sync UI values back to webConfig
 		webConfig.YOUTUBE_LOADER_LANGUAGE = youtubeLanguage;
@@ -472,25 +429,6 @@
 		}
 		webConfig = webConfig;
 	};
-
-	$: defaultWebSearchModes = [
-		{ value: 'off', label: $i18n.t('Off') },
-		{ value: 'halo', label: 'HaloWebUI', disabled: !webConfig?.ENABLE_WEB_SEARCH },
-		{
-			value: 'native',
-			label: $i18n.t('Model Native'),
-			disabled: !webConfig?.ENABLE_NATIVE_WEB_SEARCH
-		},
-		{
-			value: 'auto',
-			label: $i18n.t('Auto'),
-			disabled: !webConfig?.ENABLE_WEB_SEARCH || !webConfig?.ENABLE_NATIVE_WEB_SEARCH
-		}
-	];
-
-	$: if (webConfig) {
-		coerceDefaultWebSearchMode();
-	}
 </script>
 
 {#if !loading && !webConfig}
@@ -613,20 +551,14 @@
 									<Switch bind:state={webConfig.ENABLE_NATIVE_WEB_SEARCH} />
 								</div>
 
-								<div class="glass-item px-4 py-3">
-									<div class="flex items-center justify-between gap-4">
-										<div>
-											<div class="text-sm font-medium">{$i18n.t('Default Web Search Mode')}</div>
-											<div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-												{$i18n.t('Used as the default chat preference for new sessions.')}
-											</div>
+								<div class="flex items-center justify-between glass-item px-4 py-3">
+									<div>
+										<div class="text-sm font-medium">{$i18n.t('Enable HaloWebUI Search')}</div>
+										<div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+											{$i18n.t('HaloWebUI mode only')}
 										</div>
-										<HaloSelect
-											bind:value={webConfig.DEFAULT_WEB_SEARCH_MODE}
-											options={defaultWebSearchModes}
-											className="w-44"
-										/>
 									</div>
+									<Switch bind:state={webConfig.ENABLE_WEB_SEARCH} />
 								</div>
 							</div>
 
@@ -634,19 +566,9 @@
 								{$i18n.t('The following engine, loader, result count, domain filter, and query generation settings only apply to HaloWebUI search mode.')}
 							</div>
 
-							<!-- Enable + Engine Selection -->
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-								<div
-									class="flex items-center justify-between glass-item px-4 py-3"
-								>
-									<div class="text-sm font-medium">{$i18n.t('Enable HaloWebUI Search')}</div>
-									<Switch bind:state={webConfig.ENABLE_WEB_SEARCH} />
-								</div>
-
-								<div
-									class="glass-item px-4 py-3"
-								>
-									<div class="flex items-center justify-between">
+							<div class="grid grid-cols-1 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-3 items-start">
+								<div class="glass-item px-4 py-3">
+									<div class="flex items-center justify-between gap-4">
 										<div>
 											<div class="text-sm font-medium">{$i18n.t('Search Engine')}</div>
 											<div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
@@ -661,16 +583,10 @@
 										/>
 									</div>
 								</div>
-							</div>
 
-							<!-- Engine Credentials -->
-							{#if webConfig.WEB_SEARCH_ENGINE}
-								<div class="space-y-3">
-									<div class="text-sm font-medium text-gray-500 dark:text-gray-400 pl-1">
-										{$i18n.t('Engine Credentials')}
-									</div>
-
-									{#if webConfig.WEB_SEARCH_ENGINE === 'searxng'}
+								{#if webConfig.WEB_SEARCH_ENGINE}
+									<div class="space-y-3">
+										{#if webConfig.WEB_SEARCH_ENGINE === 'searxng'}
 										<div
 											class="glass-item p-4"
 										>
@@ -976,7 +892,7 @@
 												bind:value={webConfig.GROK_API_KEY}
 											/>
 										</div>
-									{:else if webConfig.WEB_SEARCH_ENGINE === 'sougou'}
+										{:else if webConfig.WEB_SEARCH_ENGINE === 'sougou'}
 										<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 											<div
 												class="glass-item p-4"
@@ -997,9 +913,10 @@
 												/>
 											</div>
 										</div>
-									{/if}
-								</div>
-							{/if}
+										{/if}
+									</div>
+								{/if}
+							</div>
 
 							<!-- Search Settings -->
 							{#if webConfig.ENABLE_WEB_SEARCH}

@@ -1201,7 +1201,7 @@
 		defaultModelId = getEffectiveDefaultModelId();
 
 		backgroundImageUrl = $settings?.backgroundImageUrl ?? null;
-		webSearchMode = getPreferredWebSearchMode($settings, $config, 'off');
+		webSearchMode = getPreferredWebSearchMode($settings, 'off');
 		iframeSandboxAllowSameOrigin = $settings?.iframeSandboxAllowSameOrigin ?? false;
 		iframeSandboxAllowForms = $settings?.iframeSandboxAllowForms ?? false;
 

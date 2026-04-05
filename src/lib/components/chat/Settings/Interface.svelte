@@ -354,7 +354,7 @@
 		defaultModelId = $settings?.models?.at(0) ?? '';
 
 		backgroundImageUrl = $settings.backgroundImageUrl ?? null;
-		webSearchMode = getPreferredWebSearchMode($settings, $config, 'off');
+		webSearchMode = getPreferredWebSearchMode($settings, 'off');
 	});
 </script>
 
