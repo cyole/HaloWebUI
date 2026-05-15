@@ -95,6 +95,7 @@
 		type WebSearchModeSource
 	} from '$lib/utils/web-search-mode';
 	import { getFunctionPipeRootId } from '$lib/utils/image-generation';
+	import { shouldKeepPendingAssistantPlaceholder } from '$lib/utils/chat-message-errors';
 	import { isDedicatedImageGenerationModel } from '$lib/utils/model-capabilities';
 	import { resolveModelBuiltinWebSearchState } from '$lib/utils/model-web-search-preference';
 	import { applyUserSettingsSnapshot } from '$lib/utils/user-settings';
@@ -3210,23 +3211,24 @@
 	const reconcileLoadedAssistantMessages = (activeTaskIds: string[] | null) => {
 		const hasPendingTask = Array.isArray(activeTaskIds) && activeTaskIds.length > 0;
 		const pendingAssistantIds = new Set<string>();
+		const messagesById = (history.messages ?? {}) as Record<string, any>;
 
 		if (hasPendingTask) {
-			for (const [messageId, message] of Object.entries(history.messages)) {
+			for (const [messageId, message] of Object.entries(messagesById)) {
 				if (message?.role === 'assistant' && message.done === false) {
 					pendingAssistantIds.add(messageId);
 				}
 			}
 
-			const currentMessage = history.currentId ? history.messages[history.currentId] : null;
+			const currentMessage = history.currentId ? messagesById[history.currentId] : null;
 			if (currentMessage?.role === 'assistant') {
 				pendingAssistantIds.add(currentMessage.id);
 
 				const parentMessage = currentMessage.parentId
-					? history.messages[currentMessage.parentId]
+					? messagesById[currentMessage.parentId]
 					: null;
 				for (const siblingId of parentMessage?.childrenIds ?? []) {
-					const sibling = history.messages[siblingId];
+					const sibling = messagesById[siblingId];
 					if (sibling?.role === 'assistant' && sibling.done !== true) {
 						pendingAssistantIds.add(siblingId);
 					}
@@ -3234,7 +3236,7 @@
 			}
 
 			if (pendingAssistantIds.size === 0) {
-				const latestAssistantEntry = Object.entries(history.messages)
+				const latestAssistantEntry = Object.entries(messagesById)
 					.filter(([, message]) => message?.role === 'assistant')
 					.sort(([, a], [, b]) => (a?.timestamp ?? 0) - (b?.timestamp ?? 0))
 					.at(-1);
@@ -3245,12 +3247,32 @@
 			}
 		}
 
-		for (const [messageId, message] of Object.entries(history.messages)) {
+		if (!hasPendingTask) {
+			const currentMessage = history.currentId ? messagesById[history.currentId] : null;
+			if (
+				currentMessage?.role === 'assistant' &&
+				shouldKeepPendingAssistantPlaceholder(currentMessage)
+			) {
+				pendingAssistantIds.add(currentMessage.id);
+
+				const parentMessage = currentMessage.parentId
+					? messagesById[currentMessage.parentId]
+					: null;
+				for (const siblingId of parentMessage?.childrenIds ?? []) {
+					const sibling = messagesById[siblingId];
+					if (shouldKeepPendingAssistantPlaceholder(sibling)) {
+						pendingAssistantIds.add(siblingId);
+					}
+				}
+			}
+		}
+
+		for (const [messageId, message] of Object.entries(messagesById)) {
 			if (message?.role !== 'assistant') {
 				continue;
 			}
 
-			if (hasPendingTask && pendingAssistantIds.has(messageId)) {
+			if (pendingAssistantIds.has(messageId)) {
 				message.done = false;
 			} else {
 				message.done = true;
@@ -3259,7 +3281,7 @@
 
 		activeChatIds.update((ids) => {
 			const next = new Set(ids);
-			if (hasPendingTask && $chatId) {
+			if ((hasPendingTask || pendingAssistantIds.size > 0) && $chatId) {
 				next.add($chatId);
 			} else {
 				next.delete($chatId);
@@ -4399,6 +4421,7 @@
 					childrenIds: [],
 					role: 'assistant',
 					content: '',
+					done: false,
 					model: getModelRequestId(model),
 					modelName: getModelChatDisplayName(model) || model.id,
 					...(getModelRef(model) ? { model_ref: getModelRef(model) } : {}),

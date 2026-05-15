@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
 	getRenderableMessageError,
 	hasVisibleMessageFiles,
-	shouldHideMissingOutputError
+	shouldHideMissingOutputError,
+	shouldKeepPendingAssistantPlaceholder
 } from './chat-message-errors';
 
 describe('chat-message-errors', () => {
@@ -42,5 +43,53 @@ describe('chat-message-errors', () => {
 
 		expect(shouldHideMissingOutputError(error, files)).toBe(false);
 		expect(getRenderableMessageError(error, files)).toEqual(error);
+	});
+
+	it('keeps recent empty assistant placeholders pending', () => {
+		const message = {
+			role: 'assistant',
+			content: '',
+			timestamp: 1000
+		};
+
+		expect(shouldKeepPendingAssistantPlaceholder(message, 1010, 60)).toBe(true);
+	});
+
+	it('does not keep completed, visible, errored, or stale placeholders pending', () => {
+		expect(
+			shouldKeepPendingAssistantPlaceholder(
+				{ role: 'assistant', content: '', timestamp: 1000, done: true },
+				1010,
+				60
+			)
+		).toBe(false);
+		expect(
+			shouldKeepPendingAssistantPlaceholder(
+				{ role: 'assistant', content: 'partial text', timestamp: 1000 },
+				1010,
+				60
+			)
+		).toBe(false);
+		expect(
+			shouldKeepPendingAssistantPlaceholder(
+				{ role: 'assistant', content: '', files: [{ type: 'image', id: 'file_123' }] },
+				1010,
+				60
+			)
+		).toBe(false);
+		expect(
+			shouldKeepPendingAssistantPlaceholder(
+				{ role: 'assistant', content: '', error: { content: 'failed' }, timestamp: 1000 },
+				1010,
+				60
+			)
+		).toBe(false);
+		expect(
+			shouldKeepPendingAssistantPlaceholder(
+				{ role: 'assistant', content: '', timestamp: 1000 },
+				1100,
+				60
+			)
+		).toBe(false);
 	});
 });
