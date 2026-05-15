@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-export const APP_NAME = 'Halo WebUI';
+export const APP_NAME = '掌大 Chat';
 
 // Use same-origin requests so Vite can proxy API/WebSocket calls in dev (see `vite.config.ts`).
 export const WEBUI_HOSTNAME = browser ? `${location.hostname}` : '';

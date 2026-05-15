@@ -39,7 +39,7 @@
 		updateChatFolderIdById,
 		importChat
 	} from '$lib/apis/chats';
-	import { WEBUI_BASE_URL } from '$lib/constants';
+	import { APP_NAME, WEBUI_BASE_URL } from '$lib/constants';
 	import { getModels as getWorkspaceModels } from '$lib/apis/models';
 	import { getTimeRange } from '$lib/utils';
 	import { getModelChatDisplayName } from '$lib/utils/model-display';
@@ -599,9 +599,9 @@
 						/>
 						<circle class="fill-gray-900 dark:fill-white" cx="60" cy="60" r="13" />
 					</svg>
-					<span class="font-semibold text-sm text-gray-800 dark:text-gray-100 whitespace-nowrap"
-						>Halo WebUI</span
-					>
+					<span class="font-semibold text-sm text-gray-800 dark:text-gray-100 whitespace-nowrap">
+						{APP_NAME}
+					</span>
 				</a>
 				<Tooltip content={$i18n.t($showSidebar ? 'Collapse sidebar' : 'Expand sidebar')}>
 					<button

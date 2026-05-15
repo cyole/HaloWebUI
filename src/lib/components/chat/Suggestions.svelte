@@ -2,6 +2,7 @@
 	import Fuse from 'fuse.js';
 	import Bolt from '$lib/components/icons/Bolt.svelte';
 	import { getContext, createEventDispatcher } from 'svelte';
+	import { APP_NAME } from '$lib/constants';
 
 	const i18n = getContext('i18n');
 	const dispatch = createEventDispatcher();
@@ -74,7 +75,7 @@
 			<svg class="size-3" viewBox="0 0 24 24" fill="currentColor">
 				<circle cx="12" cy="12" r="3" />
 			</svg>
-			<span class="text-[11px] font-normal tracking-[0.2em] uppercase">Halo WebUI</span>
+			<span class="text-[11px] font-normal tracking-[0.2em] uppercase">{APP_NAME}</span>
 			<svg class="size-3" viewBox="0 0 24 24" fill="currentColor">
 				<circle cx="12" cy="12" r="3" />
 			</svg>

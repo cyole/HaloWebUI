@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { user as currentUser } from '$lib/stores';
 	import Messages from '$lib/components/chat/Messages.svelte';
+	import { APP_NAME } from '$lib/constants';
 	import type { ChatPdfExportMode } from '$lib/utils/chat-pdf-export';
 
 	export let chat: any = null;
@@ -25,7 +26,7 @@
 	>
 		<div class="pdf-export-surface">
 			<div class="pdf-export-header">
-				<div class="pdf-export-badge">Halo WebUI</div>
+				<div class="pdf-export-badge">{APP_NAME}</div>
 				<h1 class="pdf-export-title">{chat?.chat?.title ?? 'Chat Export'}</h1>
 			</div>
 
