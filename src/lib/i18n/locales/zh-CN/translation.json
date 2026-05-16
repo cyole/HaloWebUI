@@ -2470,6 +2470,8 @@
 	"Ask an administrator to configure document retrieval, or enable \"Bypass Embedding and Retrieval\" if you have admin access.": "请联系管理员完成文档检索配置；如果你有管理员权限，也可以将默认文件处理模式切换为“完整上下文模式”或“原生文件模式”。",
 	"Go to /settings/documents to configure an embedding model, or switch the default file processing mode to \"Full Context\" or \"Native File\".": "请前往 `/settings/documents` 配置嵌入模型，或将默认文件处理模式切换为“完整上下文模式”或“原生文件模式”。",
 	"Ask an administrator to configure document retrieval, or switch the default file processing mode to \"Full Context\" or \"Native File\" if you have admin access.": "请联系管理员完成文档检索配置；如果你有管理员权限，也可以将默认文件处理模式切换为“完整上下文模式”或“原生文件模式”。",
+	"Go to Settings > Documents > Embedding Models to choose and save a usable embedding engine and model.": "请进入“嵌入模型”设置页，选择并保存一个可用的嵌入引擎和模型。",
+	"Ask an administrator to configure an embedding model in Settings > Documents > Embedding Models.": "请联系管理员进入“嵌入模型”设置页，配置一个可用的嵌入模型。",
 	"Embedding service authentication failed": "嵌入服务认证失败",
 	"The embedding model service rejected the request while indexing this file.": "系统在为该文件建立索引时，被嵌入模型服务拒绝了请求。",
 	"Check the embedding model credentials and endpoint in /settings/documents, then try again.": "请在 `/settings/documents` 检查嵌入模型的凭证和地址后重试。",

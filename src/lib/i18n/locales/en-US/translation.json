@@ -1735,6 +1735,8 @@
 	"No embedding model is available for document retrieval.": "No embedding model is available for document retrieval.",
 	"Go to /settings/documents to configure an embedding model, or enable \"Bypass Embedding and Retrieval\".": "Go to /settings/documents to configure an embedding model, or enable \"Bypass Embedding and Retrieval\".",
 	"Ask an administrator to configure document retrieval, or enable \"Bypass Embedding and Retrieval\" if you have admin access.": "Ask an administrator to configure document retrieval, or enable \"Bypass Embedding and Retrieval\" if you have admin access.",
+	"Go to Settings > Documents > Embedding Models to choose and save a usable embedding engine and model.": "Go to Settings > Documents > Embedding Models to choose and save a usable embedding engine and model.",
+	"Ask an administrator to configure an embedding model in Settings > Documents > Embedding Models.": "Ask an administrator to configure an embedding model in Settings > Documents > Embedding Models.",
 	"Embedding service authentication failed": "Embedding service authentication failed",
 	"The embedding model service rejected the request while indexing this file.": "The embedding model service rejected the request while indexing this file.",
 	"Check the embedding model credentials and endpoint in /settings/documents, then try again.": "Check the embedding model credentials and endpoint in /settings/documents, then try again.",

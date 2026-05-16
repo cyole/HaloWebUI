@@ -751,6 +751,12 @@
 			? runtimeCapabilities.messages.colbert_reranking
 			: runtimeCapabilities.messages.local_reranking;
 
+	const getEmbeddingModelSetupMessage = () =>
+		tr(
+			'当前检索模式需要可用的嵌入模型。请进入“嵌入模型”设置页，选择并保存一个可用的嵌入引擎和模型。',
+			'Retrieval mode requires a usable embedding model. Go to Embedding Models, choose a usable embedding engine and model, then save.'
+		);
+
 	$: localEmbeddingUnavailable =
 		embeddingEngine === '' && !runtimeCapabilities.local_embedding_available;
 	$: localRerankingUnavailable =
@@ -762,7 +768,7 @@
 
 	const embeddingModelUpdateHandler = async () => {
 		if (localEmbeddingUnavailable) {
-			toast.error(runtimeCapabilities.messages.local_embedding);
+			toast.error(getEmbeddingModelSetupMessage());
 			return false;
 		}
 		if (embeddingEngine === '' && embeddingModel.split('/').length - 1 > 1) {
@@ -1987,7 +1993,7 @@
 
 							{#if localEmbeddingUnavailable}
 								<div class="mt-3 rounded-xl border border-amber-200/70 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-300">
-									{runtimeCapabilities.messages.local_embedding}
+									{getEmbeddingModelSetupMessage()}
 								</div>
 							{/if}
 
