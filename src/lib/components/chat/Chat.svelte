@@ -1315,7 +1315,7 @@
 			if (model?.pipe) {
 				return {
 					tab: 'functions' as const,
-					id: getFunctionPipeRootId(activeModelId)
+					id: getFunctionPipeRootId(model.id || activeModelId)
 				};
 			}
 		}
